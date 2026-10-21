@@ -876,7 +876,7 @@ function endBattle(won) {
 }
 
 // ===== Tricks: short lessons that each earn a special dragon =====
-// Both tricks use the nest picture: 10 eggs per row (or 10 rows), then take some away.
+// Both tricks use the nest picture: 10 rows of n eggs, then take some rows away (half of them for x5, one for x9).
 const TRICKS = {
   five: { title: "Times 5 trick", icon: "🖐️", dragon: "halfie", factor: 5,
           rule: "First multiply by 10, then take away half!",
@@ -905,16 +905,15 @@ function showTricks() {
   app.querySelectorAll(".node").forEach(b => b.onclick = () => showLesson(b.dataset.k));
 }
 
-// the nest for a trick: 10 per row for x5, 10 rows for x9; "cut" fades what gets taken away; "final" is the answer
+// the nest for a trick: 10 rows of n eggs; "cut" fades what gets taken away (the bottom 5 rows for x5, the last row for x9); "final" is the answer
 function drawTrickNest(key, n, mode) {
   const t = TRICKS[key];
-  const q = key === "five" ? { rows: n, cols: mode === "final" ? 5 : 10 } : { rows: mode === "final" ? 9 : 10, cols: n };
+  const q = { rows: mode === "final" ? t.factor : 10, cols: n };
   Object.assign(q, { table: t.dragon, phase: "trick" });
   document.getElementById("card").style.setProperty("--cell", cellSize(q.rows, q.cols) + "px");
   buildNest(q, true);
   if (mode === "cut") {
-    if (key === "five") q.slotEls.forEach(row => row.slice(5).forEach(el => el.classList.add("gone")));
-    else q.rowEls[9].classList.add("gone");
+    q.rowEls.slice(t.factor === 5 ? 5 : 9).forEach(row => row.classList.add("gone"));
   }
   return q;
 }
