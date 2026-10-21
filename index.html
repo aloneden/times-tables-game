@@ -12,7 +12,7 @@
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; font-family: "Trebuchet MS", "Comic Sans MS", system-ui, sans-serif;
-    color: var(--ink); background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    color: var(--ink); background: linear-gradient(160deg, var(--bg1), var(--bg2)) fixed;
     display: flex; justify-content: center; padding: 16px;
   }
   #app { width: 100%; max-width: 640px; }
@@ -20,49 +20,91 @@
   h1 { margin: 0 0 4px; font-size: 2rem; text-align: center; }
   h2 { margin: 0 0 8px; text-align: center; }
   .sub { text-align: center; margin: 0 0 16px; }
-  .big-dragon { font-size: 4.5rem; text-align: center; line-height: 1; }
   button {
     font: inherit; font-weight: 700; border: 0; border-radius: 16px; padding: 12px 18px; cursor: pointer;
     background: var(--accent); color: #fff; box-shadow: 0 4px 0 rgba(0,0,0,.25); touch-action: manipulation;
   }
   button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+  button:disabled { opacity: .6; cursor: default; }
   button.alt { background: #7a5af8; }
   button.ghost { background: #e9dcc0; color: var(--ink); }
-  .tables { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
-  .tables button { padding: 14px 0; font-size: 1.3rem; }
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
   .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 700; }
-  .request { display: flex; align-items: center; gap: 12px; font-size: 1.25rem; margin-bottom: 8px; }
-  .request .face { font-size: 3rem; }
+  .topbar button { padding: 8px 14px; }
+
+  /* dragon art */
+  .dragon { width: 100%; height: 100%; display: block; overflow: visible; }
+  .locked .dragon { filter: brightness(0) opacity(.3); }
+  .bob .dragon { animation: bob 1.6s ease-in-out infinite; }
+
+  /* level map */
+  .map { background: linear-gradient(#bfe9ff, #d9f7c9 45%, #b9e6a0); border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 2px; }
+  .node {
+    display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: 22px; width: 86%;
+    background: #fff; border: 4px solid #e9dcc0; cursor: pointer; text-align: left; color: var(--ink);
+    box-shadow: 0 4px 0 rgba(0,0,0,.18); font-weight: 700;
+  }
+  .node:nth-of-type(odd) { align-self: flex-start; }
+  .node:nth-of-type(even) { align-self: flex-end; }
+  .node .av { width: 64px; height: 64px; flex: none; }
+  .node .info { flex: 1; }
+  .node small { display: block; font-weight: 400; }
+  .node .isl { font-size: 1.8rem; }
+  .node.open { border-color: var(--accent); animation: glow 1.5s ease-in-out infinite; }
+  .node.cleared { border-color: var(--good); }
+  .node.locked { cursor: not-allowed; opacity: .75; background: #eee; }
+  .trail { text-align: center; color: #6a8d4a; letter-spacing: .6em; font-weight: 700; line-height: 1; }
+
+  /* question */
+  .request { display: flex; align-items: center; gap: 12px; font-size: 1.2rem; margin-bottom: 8px; }
+  .request .face { width: 64px; height: 64px; flex: none; }
   .bubble { background: #fff; border-radius: 16px; padding: 10px 14px; flex: 1; border: 3px solid #e9dcc0; }
   .bubble b { color: var(--accent); }
   .nest {
     background: radial-gradient(circle at 50% 30%, #dba468, var(--nest)); border-radius: 24px; padding: 14px;
-    display: flex; flex-direction: column; gap: 6px; align-items: center; margin: 10px 0;
+    display: flex; flex-direction: column; gap: 5px; align-items: center; margin: 10px 0;
     box-shadow: inset 0 4px 8px rgba(0,0,0,.25);
   }
   .nrow { display: flex; align-items: center; gap: 6px; }
-  .slots { display: flex; gap: 4px; padding: 3px; border-radius: 12px; border: 3px dashed rgba(255,255,255,.55); cursor: pointer; }
-  .slots.full { border-color: transparent; cursor: default; }
-  .slot { width: var(--cell); height: var(--cell); display: grid; place-items: center; font-size: calc(var(--cell) * .85); line-height: 1; }
-  .slot.empty { opacity: .25; filter: grayscale(1); }
-  .slot.pop { animation: pop .35s ease-out; }
-  .count { width: 2.6rem; text-align: right; color: #fff; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,.5); font-size: .95rem; }
-  .total { text-align: center; font-size: 1.2rem; min-height: 1.7em; font-weight: 700; }
-  .choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
-  .choices button { font-size: 1.6rem; padding: 14px 0; }
-  .choices button.right { background: var(--good); }
-  .choices button.wrong { background: var(--bad); animation: shake .3s; }
-  .msg { text-align: center; font-size: 1.15rem; min-height: 3em; margin-top: 8px; font-weight: 700; }
-  .hatch { animation: hatch 1s ease-out; }
+  .slots { display: flex; gap: 3px; padding: 2px; border-radius: 12px; border: 3px dashed transparent; transition: border-color .15s, background .15s; }
+  .slots.hover { border-color: #fff; background: rgba(255,255,255,.25); }
+  .slot { width: var(--cell); height: calc(var(--cell) * 1.2); }
+  .slot.empty { border: 2px dashed rgba(255,255,255,.55); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
+  .slot svg { width: 100%; height: 100%; display: block; }
+  .slot.pop svg { animation: pop .35s ease-out both; }
+  .wobble .slot svg { animation: wobble .25s ease-in-out infinite alternate; }
+  .count { width: 2.6rem; text-align: right; color: #fff; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,.6); font-size: .95rem; }
+
+  /* dragging */
+  .basket { display: flex; gap: 14px; align-items: flex-end; justify-content: center; flex-wrap: wrap; background: #f1e3c4; border-radius: 20px; padding: 10px; }
+  .basket .lbl { text-align: center; font-size: .8rem; margin-top: 4px; }
+  .drag { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; display: flex; gap: 3px; padding: 6px; background: #fff; border-radius: 14px; box-shadow: 0 3px 0 rgba(0,0,0,.2); }
+  .drag .slot { height: calc(var(--cell) * 1.2); }
+  .drag.one .slot { width: calc(var(--cell) * 1.3); height: calc(var(--cell) * 1.56); }
+  .dragging { position: fixed; z-index: 99; pointer-events: none; transform: scale(1.12) rotate(-3deg); opacity: .92; box-shadow: 0 10px 18px rgba(0,0,0,.35); }
+
+  .total { text-align: center; font-size: 1.15rem; min-height: 1.7em; font-weight: 700; }
+  .ansbox { margin: 8px auto; width: 8rem; text-align: center; font-size: 2.2rem; font-weight: 700; background: #fff; border: 4px solid #e9dcc0; border-radius: 16px; padding: 2px; }
+  .ansbox.bad { animation: shake .3s; border-color: var(--bad); }
+  .ansbox.good { border-color: var(--good); color: var(--good); }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 300px; margin: 0 auto; }
+  .keypad button { font-size: 1.5rem; padding: 10px 0; }
+  .keypad .ok { background: var(--good); }
+  .msg { text-align: center; font-size: 1.1rem; min-height: 2em; margin-top: 8px; font-weight: 700; }
+  .hatched { width: 110px; height: 110px; margin: 0 auto; animation: hatch 1s ease-out; }
+
   .coll { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .coll div { background: #fff; border-radius: 16px; padding: 10px 4px; text-align: center; border: 3px solid #e9dcc0; }
-  .coll .e { font-size: 2.2rem; }
-  .coll .locked .e { filter: grayscale(1) brightness(.4); }
+  .coll > div { background: #fff; border-radius: 16px; padding: 10px 4px; text-align: center; border: 3px solid #e9dcc0; }
+  .coll .e { width: 70px; height: 70px; margin: 0 auto 4px; }
   .coll small { display: block; }
+  .hero { width: 120px; height: 120px; margin: 0 auto; }
+
   @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
   @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
-  @keyframes hatch { 0% { transform: scale(.3) rotate(-20deg); } 60% { transform: scale(1.4) rotate(10deg); } 100% { transform: scale(1); } }
+  @keyframes hatch { 0% { transform: scale(.2) rotate(-25deg); } 60% { transform: scale(1.3) rotate(10deg); } 100% { transform: scale(1); } }
+  @keyframes bob { 50% { transform: translateY(-5px); } }
+  @keyframes wobble { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+  @keyframes glow { 50% { box-shadow: 0 4px 0 rgba(0,0,0,.18), 0 0 18px 4px rgba(255,122,61,.7); } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
 </style>
 </head>
@@ -70,195 +112,447 @@
 <div id="app"></div>
 
 <script>
-// One dragon per times table. Mix rounds use any of them.
+// ===== Dragons: one per times table, drawn as SVG from a few traits =====
 const DRAGONS = {
-  2:  { emoji: "🐣", name: "Peep" },   3:  { emoji: "🦎", name: "Zippy" },
-  4:  { emoji: "🐲", name: "Ember" },  5:  { emoji: "🦕", name: "Longneck" },
-  6:  { emoji: "🐊", name: "Snappy" }, 7:  { emoji: "🦖", name: "Rex" },
-  8:  { emoji: "🐉", name: "Blaze" },  9:  { emoji: "🐍", name: "Slinky" },
-  10: { emoji: "🦄", name: "Sparkle" },
+  2:  { name: "Peep",    c: "#ffd34d", dk: "#e6a800", bel: "#fff2b8", horn: "none",  wing: "small", mark: "spots" },
+  3:  { name: "Zippy",   c: "#5fd068", dk: "#2e9e3e", bel: "#d9f7c9", horn: "small", wing: "small", mark: "none" },
+  4:  { name: "Ember",   c: "#ff6b4a", dk: "#c93a1c", bel: "#ffd0a6", horn: "small", wing: "big",   mark: "none" },
+  5:  { name: "Bubbles", c: "#4aa8ff", dk: "#2175cc", bel: "#cdeaff", horn: "fin",   wing: "small", mark: "spots" },
+  6:  { name: "Plum",    c: "#a66bff", dk: "#6f3fc4", bel: "#e6d3ff", horn: "big",   wing: "big",   mark: "none" },
+  7:  { name: "Frosty",  c: "#7de3e3", dk: "#2fa9b5", bel: "#e6ffff", horn: "fin",   wing: "big",   mark: "star" },
+  8:  { name: "Blaze",   c: "#ff9a2e", dk: "#d3620a", bel: "#ffe2a8", horn: "big",   wing: "big",   mark: "spots" },
+  9:  { name: "Rosie",   c: "#ff8fc0", dk: "#d4508c", bel: "#ffe0ef", horn: "ears",  wing: "small", mark: "heart" },
+  10: { name: "Sparkle", c: "#ffc933", dk: "#d49a00", bel: "#fff4c2", horn: "crown", wing: "big",   mark: "star" },
 };
-const ROUND_LENGTH = 5;
-const app = document.getElementById("app");
+const LEVELS = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+const ISLANDS = ["🌴", "🌲", "🌋", "🏖️", "🍄", "❄️", "🏜️", "🌊", "🏰"];
+const ROUND_LENGTH = 5, MASTER_LENGTH = 8, PASS_MARK = 3;
 
-// ---- saved collection (hatched count per table) ----
-function loadSave() {
-  try { return JSON.parse(localStorage.getItem("dragons") || "{}"); } catch { return {}; }
+function dragonSVG(d) {
+  const { c, dk, bel, horn, wing, mark } = d;
+  let s = `<svg class="dragon" viewBox="0 0 100 100" aria-hidden="true">`;
+  s += `<path d="M66 84 Q94 88 90 62 Q84 76 68 74 Z" fill="${c}"/><path d="M90 62 L97 57 L94 69 Z" fill="${dk}"/>`;
+  if (wing !== "none") {
+    const k = wing === "big" ? 1 : .7;
+    const w = `<path d="M0 0 Q-30 -8 -36 -36 Q-20 -28 -15 -32 Q-12 -14 0 -14 Z" fill="${dk}"/>`;
+    s += `<g transform="translate(32 62) scale(${k})">${w}</g><g transform="translate(68 62) scale(${-k} ${k})">${w}</g>`;
+  }
+  s += `<ellipse cx="50" cy="70" rx="23" ry="22" fill="${c}"/><ellipse cx="50" cy="76" rx="14" ry="15" fill="${bel}"/>`;
+  s += `<path d="M42 72 h16 M43 79 h14" stroke="${c}" stroke-width="1.6" stroke-linecap="round" opacity=".6"/>`;
+  s += `<ellipse cx="37" cy="91" rx="9" ry="5" fill="${dk}"/><ellipse cx="63" cy="91" rx="9" ry="5" fill="${dk}"/>`;
+  if (horn === "small") s += `<path d="M33 26 L37 10 L45 21 Z M67 26 L63 10 L55 21 Z" fill="${dk}"/>`;
+  if (horn === "big") s += `<path d="M31 29 Q26 10 36 3 Q38 14 46 22 Z M69 29 Q74 10 64 3 Q62 14 54 22 Z" fill="${dk}"/>`;
+  if (horn === "ears") s += `<ellipse cx="33" cy="19" rx="7" ry="14" transform="rotate(-18 33 19)" fill="${c}"/><ellipse cx="33" cy="20" rx="3.5" ry="9" transform="rotate(-18 33 20)" fill="#ffb3d1"/><ellipse cx="67" cy="19" rx="7" ry="14" transform="rotate(18 67 19)" fill="${c}"/><ellipse cx="67" cy="20" rx="3.5" ry="9" transform="rotate(18 67 20)" fill="#ffb3d1"/>`;
+  if (horn === "fin") s += `<path d="M50 10 Q38 20 34 32 L66 32 Q62 20 50 10 Z" fill="${dk}"/><path d="M26 38 L14 30 L22 46 Z M74 38 L86 30 L78 46 Z" fill="${dk}"/>`;
+  s += `<circle cx="50" cy="42" r="26" fill="${c}"/><ellipse cx="50" cy="52" rx="14" ry="10" fill="${bel}"/>`;
+  s += `<circle cx="45" cy="50" r="1.5" fill="${dk}"/><circle cx="55" cy="50" r="1.5" fill="${dk}"/>`;
+  s += `<circle cx="39" cy="39" r="7.5" fill="#fff"/><circle cx="61" cy="39" r="7.5" fill="#fff"/>`;
+  s += `<circle cx="40.5" cy="40.5" r="4.4" fill="#2a1a3a"/><circle cx="62.5" cy="40.5" r="4.4" fill="#2a1a3a"/>`;
+  s += `<circle cx="42" cy="38.5" r="1.7" fill="#fff"/><circle cx="64" cy="38.5" r="1.7" fill="#fff"/>`;
+  s += `<circle cx="29" cy="50" r="4" fill="#ff9db1" opacity=".7"/><circle cx="71" cy="50" r="4" fill="#ff9db1" opacity=".7"/>`;
+  s += `<path d="M44 56 Q50 62 56 56" stroke="#2a1a3a" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  if (mark === "spots") s += `<circle cx="58" cy="24" r="3" fill="${dk}" opacity=".5"/><circle cx="46" cy="22" r="2" fill="${dk}" opacity=".5"/><circle cx="62" cy="68" r="3" fill="${dk}" opacity=".4"/>`;
+  if (mark === "star") s += `<text x="50" y="30" font-size="11" text-anchor="middle" fill="#ffd34d" stroke="#c98a00" stroke-width=".5">★</text>`;
+  if (mark === "heart") s += `<text x="50" y="82" font-size="12" text-anchor="middle" fill="#ff5c9a">♥</text>`;
+  if (horn === "crown") s += `<path d="M36 20 L36 6 L43 13 L50 2 L57 13 L64 6 L64 20 Z" fill="#ffd34d" stroke="#d49a00" stroke-width="1.5" stroke-linejoin="round"/>`;
+  return s + `</svg>`;
 }
-function writeSave(s) { try { localStorage.setItem("dragons", JSON.stringify(s)); } catch {} }
+
+function eggSVG(d) {
+  return `<svg viewBox="0 0 40 50" aria-hidden="true"><path d="M20 2 C31 2 38 24 38 33 C38 43 30 48 20 48 C10 48 2 43 2 33 C2 24 9 2 20 2 Z" fill="${d.c}" stroke="${d.dk}" stroke-width="2"/><circle cx="14" cy="30" r="3.5" fill="${d.bel}"/><circle cx="26" cy="22" r="3" fill="${d.bel}"/><circle cx="24" cy="37" r="2.5" fill="${d.bel}"/><ellipse cx="14" cy="14" rx="3" ry="5" transform="rotate(25 14 14)" fill="#fff" opacity=".45"/></svg>`;
+}
+
+// ===== Sounds: all synthesized, no audio files =====
+let audio = null, muted = false;
+try { muted = localStorage.getItem("muted") === "1"; } catch {}
+function ensureAudio() {
+  if (muted) return null;
+  if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
+  if (audio.state === "suspended") audio.resume();
+  return audio;
+}
+function tone(freq, at, dur, { type = "sine", vol = .18, to = null } = {}) {
+  const a = ensureAudio(); if (!a) return;
+  const t = a.currentTime + at, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + .015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + .05);
+}
+function crack(at, dur = .09) {
+  const a = ensureAudio(); if (!a) return;
+  const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2;
+  const src = a.createBufferSource(), g = a.createGain();
+  src.buffer = buf; g.gain.value = .35; src.connect(g).connect(a.destination); src.start(a.currentTime + at);
+}
+const NOTE = { C: 523.25, D: 587.33, E: 659.25, G: 783.99, A: 880, C2: 1046.5, E2: 1318.5 };
+const sfx = {
+  pick: () => tone(660, 0, .06, { type: "triangle", vol: .1 }),
+  place: n => tone(380 + (n % 12) * 28, 0, .12, { type: "triangle", to: 260 + (n % 12) * 20 }),
+  row: () => [0, 1, 2].forEach(i => tone(400 + i * 120, i * .05, .1, { type: "triangle" })),
+  key: () => tone(500, 0, .05, { type: "square", vol: .05 }),
+  wrong: () => { tone(300, 0, .18, { type: "sawtooth", vol: .1, to: 200 }); tone(220, .15, .25, { type: "sawtooth", vol: .1, to: 140 }); },
+  right: () => [NOTE.C, NOTE.E, NOTE.G, NOTE.C2].forEach((f, i) => tone(f, i * .09, .22, { type: "triangle" })),
+  wobble: () => [0, .18, .36].forEach(t => { crack(t, .05); tone(240, t, .1, { type: "square", vol: .05 }); }),
+  hatch: () => {
+    crack(0); crack(.1, .05);
+    tone(300, .15, .35, { type: "sawtooth", vol: .12, to: 120 });               // tiny roar
+    [NOTE.G, NOTE.C2, NOTE.E2, NOTE.G * 2].forEach((f, i) => tone(f, .3 + i * .08, .3, { type: "sine", vol: .14 }));
+  },
+  unlock: () => [NOTE.C, NOTE.E, NOTE.G, NOTE.C2, 0, NOTE.G, NOTE.C2, NOTE.E2].forEach((f, i) => f && tone(f, i * .12, .3, { type: "triangle" })),
+};
+function toggleMute() {
+  muted = !muted;
+  try { localStorage.setItem("muted", muted ? "1" : "0"); } catch {}
+  document.querySelectorAll(".mute").forEach(b => b.textContent = muted ? "🔇" : "🔊");
+  if (!muted) sfx.pick();
+}
+const muteBtn = () => `<button class="ghost mute" aria-label="Sound on or off">${muted ? "🔇" : "🔊"}</button>`;
+function bindMute() { document.querySelectorAll(".mute").forEach(b => b.onclick = toggleMute); }
+
+// ===== Save data =====
+const app = document.getElementById("app");
+function loadSave() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem("dragonsV2") || "{}"); } catch {}
+  if (!s.hatched) {
+    try { s.hatched = JSON.parse(localStorage.getItem("dragons") || "{}"); } catch { s.hatched = {}; }
+  }
+  s.best = s.best || {};
+  return s;
+}
+function writeSave() { try { localStorage.setItem("dragonsV2", JSON.stringify(save)); } catch {} }
 let save = loadSave();
 
 const rand = n => Math.floor(Math.random() * n);
 const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+const cleared = t => (save.best[t] || 0) >= PASS_MARK;
+const unlockAll = () => location.hash === "#unlock";
+const unlocked = t => unlockAll() || t === LEVELS[0] || cleared(LEVELS[LEVELS.indexOf(t) - 1]);
+const masterUnlocked = () => unlockAll() || LEVELS.every(cleared);
+const medal = n => n >= 5 ? 3 : n === 4 ? 2 : n >= PASS_MARK ? 1 : 0;
 
-// ---- screens ----
-function showHome() {
-  const buttons = [2,3,4,5,6,7,8,9,10].map(t => `<button data-t="${t}">${t}×</button>`).join("");
+// ===== Map screen (home) =====
+function showMap() {
+  const nodes = LEVELS.map((t, i) => {
+    const d = DRAGONS[t], open = unlocked(t), done = cleared(t), m = medal(save.best[t] || 0);
+    const cls = done ? "cleared" : open ? "open" : "locked";
+    const status = !open ? "🔒 Clear the level before" : done ? "⭐".repeat(m) + "☆".repeat(3 - m) : "Tap to play!";
+    return `<button class="node ${cls}" data-t="${t}" ${open ? "" : "aria-disabled='true'"}>
+      <span class="av ${open ? "bob" : "locked"}">${dragonSVG(d)}</span>
+      <span class="info">${t}× table<small>${open ? d.name : "???"} · ${status}</small></span>
+      <span class="isl">${ISLANDS[i]}</span></button>`;
+  });
+  const mu = masterUnlocked();
+  const master = `<button class="node ${mu ? "open" : "locked"}" data-t="mix">
+      <span class="av" style="font-size:3rem;text-align:center">🏆</span>
+      <span class="info">Dragon Master Mix<small>${mu ? "All the tables!" : "🔒 Clear every level"}</small></span></button>`;
   app.innerHTML = `
     <div class="card">
-      <div class="big-dragon">🥚🐉</div>
+      <div class="topbar"><span></span>${muteBtn()}</div>
+      <div class="hero bob">${dragonSVG(DRAGONS[4])}</div>
       <h1>Dragon Egg Nursery</h1>
-      <p class="sub">Build nests of eggs. Hatch baby dragons!</p>
-      <h2>Pick a times table</h2>
-      <div class="tables">${buttons}<button class="alt" data-t="mix">Mix</button></div>
-      <div class="row"><button class="ghost" id="coll">My dragons 🐲</button></div>
+      <p class="sub">Build nests, hatch dragons, travel the map!</p>
+      <div class="map">${nodes.join('<div class="trail">· · ·</div>')}<div class="trail">· · ·</div>${master}</div>
+      <div class="row"><button class="alt" id="coll">My dragons 🐲</button></div>
     </div>`;
-  app.querySelectorAll("[data-t]").forEach(b => b.onclick = () => startRound(b.dataset.t));
+  bindMute();
+  app.querySelectorAll(".node").forEach(b => b.onclick = () => {
+    const t = b.dataset.t;
+    if (t === "mix" ? !masterUnlocked() : !unlocked(Number(t))) return sfx.wrong();
+    startRound(t);
+  });
   document.getElementById("coll").onclick = showCollection;
 }
 
 function showCollection() {
-  const cells = Object.entries(DRAGONS).map(([t, d]) => {
-    const n = save[t] || 0;
-    return `<div class="${n ? "" : "locked"}"><span class="e">${d.emoji}</span><b>${n ? d.name : "???"}</b><small>${t}× table${n ? ` · ×${n}` : ""}</small></div>`;
+  const cells = LEVELS.map(t => {
+    const d = DRAGONS[t], n = save.hatched[t] || 0;
+    return `<div class="${n ? "" : "locked"}"><div class="e">${dragonSVG(d)}</div><b>${n ? d.name : "???"}</b><small>${t}× table${n ? ` · hatched ${n}` : ""}</small></div>`;
   }).join("");
-  app.innerHTML = `
-    <div class="card"><h1>My Dragons</h1><p class="sub">Hatch eggs from a table to meet its dragon.</p>
-      <div class="coll">${cells}</div>
-      <div class="row"><button id="back">Back</button></div></div>`;
-  document.getElementById("back").onclick = showHome;
+  app.innerHTML = `<div class="card"><h1>My Dragons</h1><p class="sub">Hatch eggs from a table to meet its dragon.</p>
+    <div class="coll">${cells}</div><div class="row"><button id="back">Back to map</button></div></div>`;
+  document.getElementById("back").onclick = showMap;
 }
 
-// ---- round logic ----
-let round;
-function makeQuestion(mode) {
-  const table = mode === "mix" ? 2 + rand(9) : Number(mode);
-  const other = 1 + rand(10);
-  const swap = Math.random() < .5;
-  return { table, rows: swap ? other : table, cols: swap ? table : other };
-}
+// ===== Round logic =====
+let round = null, typed = "";
 
-function startRound(mode) {
-  round = { mode, i: 0, stars: 0, q: null };
+function startRound(level) {
+  ensureAudio();
+  const qs = [];
+  if (level === "mix") {
+    for (let i = 0; i < MASTER_LENGTH; i++) qs.push({ table: LEVELS[rand(LEVELS.length)], other: 1 + rand(10) });
+  } else {
+    shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).slice(0, ROUND_LENGTH).forEach(o => qs.push({ table: Number(level), other: o }));
+  }
+  qs.forEach(q => {
+    const swap = Math.random() < .5;
+    q.rows = swap ? q.other : q.table; q.cols = swap ? q.table : q.other;
+  });
+  round = { level, qs, i: 0, stars: 0, q: null };
   nextQuestion();
 }
 
 function nextQuestion() {
-  if (round.i >= ROUND_LENGTH) return showResults();
-  round.q = makeQuestion(round.mode);
-  round.q.filled = 0;
-  round.q.misses = 0;
+  if (round.i >= round.qs.length) return showResults();
+  round.q = Object.assign(round.qs[round.i], { misses: 0, hinted: false, phase: "build" });
   renderQuestion();
+}
+
+function cellSize(rows, cols) {
+  const byWidth = Math.floor((Math.min(window.innerWidth, 640) - 150) / cols) - 4;
+  const byHeight = Math.floor(360 / rows / 1.2) - 4;
+  return Math.max(16, Math.min(36, byWidth, byHeight));
 }
 
 function renderQuestion() {
-  const { rows, cols, table } = round.q;
-  const d = DRAGONS[table];
-  const cell = Math.max(18, Math.min(40, Math.floor(Math.min(window.innerWidth - 150, 460) / cols) - 6));
+  const q = round.q, d = DRAGONS[q.table], { rows, cols } = q;
+  const trayEggs = `<div class="slot">${eggSVG(d)}</div>`.repeat(cols);
   app.innerHTML = `
-    <div class="card" style="--cell:${cell}px">
-      <div class="topbar"><button class="ghost" id="home">✕</button><span>Egg ${round.i + 1} of ${ROUND_LENGTH}</span><span>⭐ ${round.stars}</span></div>
-      <div class="request"><span class="face">${d.emoji}</span>
+    <div class="card" id="card" style="--cell:${cellSize(rows, cols)}px">
+      <div class="topbar"><button class="ghost" id="home">✕</button><span>Nest ${round.i + 1} of ${round.qs.length} · ⭐ ${round.stars}</span>${muteBtn()}</div>
+      <div class="request"><span class="face bob">${dragonSVG(d)}</span>
         <div class="bubble">${d.name} wants <b>${rows} ${rows === 1 ? "row" : "rows"}</b> with <b>${cols}</b> ${cols === 1 ? "egg" : "eggs"} in each row!</div></div>
       <div class="nest" id="nest"></div>
-      <div class="total" id="total">Tap a row to fill it with eggs 👆</div>
-      <div id="answer"></div>
+      <div id="panel">
+        <div class="basket">
+          <div><div class="drag tray" data-kind="tray">${trayEggs}</div><div class="lbl">Drag a whole row</div></div>
+          <div><div class="drag one" data-kind="egg"><div class="slot">${eggSVG(d)}</div></div><div class="lbl">or one egg</div></div>
+        </div>
+        <div class="total">Drag eggs into the nest! 👆</div>
+      </div>
       <div class="msg" id="msg"></div>
     </div>`;
-  document.getElementById("home").onclick = showHome;
-  const nest = document.getElementById("nest");
-  for (let r = 0; r < rows; r++) {
+  document.getElementById("home").onclick = showMap;
+  bindMute();
+  buildNest(q, false);
+  document.querySelectorAll(".drag").forEach(el => makeDraggable(el, el.dataset.kind));
+}
+
+function buildNest(q, full) {
+  const nest = document.getElementById("nest"), d = DRAGONS[q.table];
+  nest.innerHTML = "";
+  q.grid = []; q.rowEls = []; q.slotEls = [];
+  for (let r = 0; r < q.rows; r++) {
     const row = document.createElement("div");
     row.className = "nrow";
-    row.innerHTML = `<div class="slots">${`<div class="slot empty">🥚</div>`.repeat(cols)}</div><span class="count"></span>`;
-    row.querySelector(".slots").onclick = () => fillRow(row, r);
+    row.innerHTML = `<div class="slots">${`<div class="slot ${full ? "" : "empty"}">${full ? eggSVG(d) : ""}</div>`.repeat(q.cols)}</div><span class="count">${full ? (r + 1) * q.cols : ""}</span>`;
     nest.appendChild(row);
+    q.rowEls.push(row);
+    q.slotEls.push([...row.querySelectorAll(".slot")]);
+    q.grid.push(Array(q.cols).fill(full));
+    row.querySelector(".slots").onclick = () => { if (q.phase === "build") fillRow(r); };
   }
 }
 
-function fillRow(row, r) {
+function placeEgg(r, c, delay = 0) {
   const q = round.q;
-  const slots = row.querySelector(".slots");
-  if (slots.classList.contains("full")) return;
-  slots.classList.add("full");
-  row.querySelectorAll(".slot").forEach((s, i) => {
-    s.classList.remove("empty");
-    s.classList.add("pop");
-    s.style.animationDelay = `${i * 40}ms`;
+  if (q.grid[r][c]) return false;
+  q.grid[r][c] = true;
+  const el = q.slotEls[r][c];
+  el.classList.remove("empty");
+  el.classList.add("pop");
+  el.innerHTML = eggSVG(DRAGONS[q.table]);
+  el.firstChild.style.animationDelay = `${delay}ms`;
+  return true;
+}
+
+function fillRow(r) {
+  const q = round.q;
+  let added = 0;
+  for (let c = 0; c < q.cols; c++) if (placeEgg(r, c, added * 35)) added++;
+  if (added) { sfx.row(); afterPlace(); }
+}
+
+function placeOne(r, c) {
+  const q = round.q;
+  if (q.grid[r][c]) c = q.grid[r].indexOf(false);      // slot taken: use first free slot in the row
+  if (c < 0) return;
+  let n = 0;
+  q.grid.forEach(g => g.forEach(v => n += v));
+  placeEgg(r, c);
+  sfx.place(n);
+  afterPlace();
+}
+
+function afterPlace() {
+  const q = round.q;
+  if (q.phase === "build" && q.grid.every(g => g.every(Boolean))) {
+    q.phase = "answer";
+    setTimeout(showAnswer, 500);
+  }
+}
+
+// ----- drag and drop (pointer events: mouse, touch, pen) -----
+function makeDraggable(el, kind) {
+  el.addEventListener("pointerdown", e => {
+    if (round.q.phase !== "build") return;
+    e.preventDefault();
+    ensureAudio(); sfx.pick();
+    const lift = e.pointerType === "touch" ? 54 : 0;     // keep the egg visible above a finger
+    const ghost = el.cloneNode(true);
+    ghost.classList.add("dragging");
+    ghost.style.setProperty("--cell", getComputedStyle(el).getPropertyValue("--cell") || document.getElementById("card").style.getPropertyValue("--cell"));
+    document.body.appendChild(ghost);
+    const rect = el.getBoundingClientRect();
+    ghost.style.width = rect.width + "px";
+    let hoverRow = null;
+    const at = ev => {
+      const x = ev.clientX, y = ev.clientY - lift;
+      ghost.style.left = x - rect.width / 2 + "px";
+      ghost.style.top = y - rect.height / 2 + "px";
+      return document.elementFromPoint(x, y);
+    };
+    const rowOf = node => node && node.closest(".nrow");
+    const move = ev => {
+      const row = rowOf(at(ev));
+      if (row !== hoverRow) {
+        if (hoverRow) hoverRow.querySelector(".slots").classList.remove("hover");
+        hoverRow = row;
+        if (row) row.querySelector(".slots").classList.add("hover");
+      }
+    };
+    const end = ev => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      const target = ev.type === "pointercancel" ? null : at(ev);
+      ghost.remove();
+      if (hoverRow) hoverRow.querySelector(".slots").classList.remove("hover");
+      const row = rowOf(target);
+      if (!row) return;
+      const r = round.q.rowEls.indexOf(row);
+      if (kind === "tray") fillRow(r);
+      else {
+        const slot = target.closest(".slot");
+        placeOne(r, slot ? round.q.slotEls[r].indexOf(slot) : round.q.grid[r].indexOf(false));
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    move(e);
   });
-  q.filled++;
-  // skip counting: each filled row shows the running total
-  row.querySelector(".count").textContent = q.filled * q.cols;
-  const total = document.getElementById("total");
-  total.textContent = Array.from({ length: q.filled }, (_, i) => (i + 1) * q.cols).join(", ") + (q.filled < q.rows ? "…" : "");
-  if (q.filled === q.rows) setTimeout(showAnswer, 500);
 }
 
+// ----- answering (typed, so the choices never give the answer away) -----
 function showAnswer() {
-  const { rows, cols } = round.q;
-  const answer = rows * cols;
-  const opts = new Set([answer]);
-  const near = [answer + cols, answer - cols, answer + rows, answer - rows, answer + 1, answer - 1, answer + 10, answer - 10];
-  for (const n of shuffle(near)) if (n > 0 && opts.size < 4) opts.add(n);
-  while (opts.size < 4) opts.add(1 + rand(100));
-  document.getElementById("total").textContent = "How many eggs in the nest altogether?";
-  const box = document.getElementById("answer");
-  box.innerHTML = `<div class="choices">${shuffle([...opts]).map(n => `<button data-n="${n}">${n}</button>`).join("")}</div>`;
-  box.querySelectorAll("button").forEach(b => b.onclick = () => choose(b, answer));
+  typed = "";
+  const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, "⌫", 0, "✔"].map(k =>
+    `<button data-k="${k}" ${k === "✔" ? 'class="ok"' : k === "⌫" ? 'class="ghost"' : ""}>${k}</button>`).join("");
+  document.getElementById("panel").innerHTML = `
+    <div class="total">How many eggs in the nest altogether?</div>
+    <div class="ansbox" id="ans">?</div>
+    <div class="keypad">${keys}</div>
+    <div class="row"><button class="ghost" id="hint">💡 Help me count</button></div>`;
+  document.querySelectorAll(".keypad button").forEach(b => b.onclick = () => pressKey(b.dataset.k));
+  document.getElementById("hint").onclick = showHint;
+  document.getElementById("nest").scrollIntoView?.({ block: "nearest", behavior: "smooth" });
 }
 
-function choose(btn, answer) {
+function pressKey(k) {
+  if (!round || round.q.phase !== "answer") return;
+  sfx.key();
+  if (k === "⌫") typed = typed.slice(0, -1);
+  else if (k === "✔") return submit();
+  else if (typed.length < 3) typed += k;
+  document.getElementById("ans").textContent = typed || "?";
+}
+window.addEventListener("keydown", e => {
+  if (e.key >= "0" && e.key <= "9") pressKey(e.key);
+  else if (e.key === "Backspace") pressKey("⌫");
+  else if (e.key === "Enter") pressKey("✔");
+});
+
+function showHint() {
   const q = round.q;
-  if (Number(btn.dataset.n) !== answer) {
+  q.hinted = true;
+  q.rowEls.forEach((row, r) => row.querySelector(".count").textContent = (r + 1) * q.cols);
+  document.getElementById("msg").textContent = `Count by ${q.cols}s going down the rows 😉`;
+}
+
+function submit() {
+  const q = round.q;
+  if (!typed) return;
+  const box = document.getElementById("ans");
+  if (Number(typed) !== q.rows * q.cols) {
     q.misses++;
-    btn.classList.add("wrong");
-    btn.disabled = true;
-    document.getElementById("msg").textContent = `Not quite! ${q.rows} rows of ${q.cols}: count the numbers on the side and try again 🤔`;
+    sfx.wrong();
+    box.classList.remove("bad"); void box.offsetWidth; box.classList.add("bad");
+    document.getElementById("msg").textContent = "Not quite! Look at the nest and try again 🤔";
+    typed = ""; box.textContent = "?";
+    if (q.misses >= 2 && !q.hinted) showHint();
     return;
   }
-  document.querySelectorAll(".choices button").forEach(b => b.disabled = true);
-  btn.classList.add("right");
-  if (q.misses === 0) round.stars++;
-  hatch();
+  q.phase = "done";
+  if (q.misses === 0 && !q.hinted) round.stars++;
+  box.classList.add("good");
+  sfx.right();
+  setTimeout(() => { document.getElementById("nest").classList.add("wobble"); sfx.wobble(); }, 450);
+  setTimeout(hatch, 1300);
 }
 
 function hatch() {
-  const { rows, cols, table } = round.q;
-  const d = DRAGONS[table];
-  save[table] = (save[table] || 0) + 1;
-  writeSave(save);
-  document.getElementById("total").textContent = `${rows} × ${cols} = ${rows * cols}`;
-  document.getElementById("answer").innerHTML = "";
-  document.getElementById("msg").innerHTML = `
-    <span class="hatch" style="display:inline-block;font-size:3rem">${d.emoji}</span><br>
-    The eggs hatched! ${d.name} says thanks!
-    <div class="row">
-      <button class="alt" id="turn">Turn the nest 🔄</button>
-      <button id="next">${round.i + 1 === ROUND_LENGTH ? "Finish" : "Next eggs"} ➜</button>
-    </div>`;
+  const q = round.q, d = DRAGONS[q.table];
+  q.rowEls.forEach((row, r) => row.querySelector(".count").textContent = (r + 1) * q.cols);
+  document.getElementById("nest").classList.remove("wobble");
+  save.hatched[q.table] = (save.hatched[q.table] || 0) + 1;
+  writeSave();
+  sfx.hatch();
+  const last = round.i + 1 === round.qs.length;
+  document.getElementById("panel").innerHTML = `
+    <div class="total">${q.rows} × ${q.cols} = ${q.rows * q.cols}</div>
+    <div class="hatched">${dragonSVG(d)}</div>`;
+  document.getElementById("msg").innerHTML = `Hooray! ${d.name} hatched!
+    <div class="row"><button class="alt" id="turn">Turn the nest 🔄</button><button id="next">${last ? "Finish" : "Next nest"} ➜</button></div>`;
   document.getElementById("turn").onclick = turnNest;
-  document.getElementById("next").onclick = () => { round.i++; nextQuestion(); };
+  document.getElementById("next").onclick = next;
 }
 
-// Show the same eggs turned sideways: rows x cols becomes cols x rows.
+// Same eggs turned sideways: rows × cols becomes cols × rows.
 function turnNest() {
   const q = round.q;
+  sfx.pick();
   [q.rows, q.cols] = [q.cols, q.rows];
-  renderQuestion();
-  document.querySelectorAll(".slots").forEach(s => {
-    s.classList.add("full");
-    s.querySelectorAll(".slot").forEach(e => e.classList.remove("empty"));
-  });
-  document.querySelectorAll(".count").forEach((c, i) => c.textContent = (i + 1) * q.cols);
-  document.getElementById("total").textContent = `Same eggs, turned! ${q.rows} × ${q.cols} = ${q.rows * q.cols}`;
-  document.getElementById("msg").innerHTML = `<div class="row"><button id="next">Next eggs ➜</button></div>`;
-  document.getElementById("next").onclick = () => { round.i++; nextQuestion(); };
+  document.getElementById("card").style.setProperty("--cell", cellSize(q.rows, q.cols) + "px");
+  buildNest(q, true);
+  document.getElementById("panel").querySelector(".total").textContent = `Turned it! Now ${q.rows} × ${q.cols} = ${q.rows * q.cols}. Same eggs!`;
+  document.getElementById("turn").remove();
 }
+
+function next() { round.i++; nextQuestion(); }
 
 function showResults() {
-  const s = round.stars;
-  const text = s === ROUND_LENGTH ? "Perfect! You're a Dragon Master! 🏆" : s >= 3 ? "Great job, dragon trainer! 🎉" : "Nice try! Every egg helps you learn 💪";
+  const s = round.stars, n = round.qs.length, isMix = round.level === "mix";
+  const first = Number(round.level);
+  const was = !isMix && cleared(first);
+  if (!isMix) save.best[first] = Math.max(save.best[first] || 0, s);
+  writeSave();
+  const passed = isMix ? s >= PASS_MARK : s >= PASS_MARK;
+  const nextLevel = LEVELS[LEVELS.indexOf(first) + 1];
+  const newUnlock = !isMix && passed && !was;
+  let text = s === n ? "Perfect! Dragon Master! 🏆" : passed ? "Great job, dragon trainer! 🎉" : `Get ${PASS_MARK} stars to open the next level. You can do it! 💪`;
+  if (newUnlock) text += nextLevel ? `<br>🔓 New level unlocked: ${nextLevel}× table!` : "<br>🔓 Dragon Master Mix unlocked!";
+  (passed ? (newUnlock ? sfx.unlock : sfx.right) : sfx.pick)();
   app.innerHTML = `
-    <div class="card"><div class="big-dragon">🐉✨</div>
+    <div class="card"><div class="hero bob">${dragonSVG(DRAGONS[isMix ? 10 : first])}</div>
       <h1>Round complete!</h1>
-      <p class="sub">${"⭐".repeat(s) || "—"}<br>${s} of ${ROUND_LENGTH} right on the first try<br>${text}</p>
-      <div class="row"><button id="again">Play again</button><button class="alt" id="coll">My dragons</button><button class="ghost" id="home">Home</button></div></div>`;
-  document.getElementById("again").onclick = () => startRound(round.mode);
-  document.getElementById("coll").onclick = showCollection;
-  document.getElementById("home").onclick = showHome;
+      <p class="sub">${"⭐".repeat(s) || "—"}<br>${s} of ${n} right on the first try<br>${text}</p>
+      <div class="row">
+        <button id="again">Play again</button>
+        ${newUnlock && nextLevel ? `<button class="alt" id="nextlvl">Next level ➜</button>` : ""}
+        <button class="ghost" id="map">Map 🗺️</button>
+      </div></div>`;
+  document.getElementById("again").onclick = () => startRound(round.level);
+  if (newUnlock && nextLevel) document.getElementById("nextlvl").onclick = () => startRound(nextLevel);
+  document.getElementById("map").onclick = showMap;
 }
 
-showHome();
+showMap();
 </script>
 </body>
 </html>
