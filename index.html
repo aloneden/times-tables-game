@@ -1,12 +1,264 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Times Tables Game</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dragon Egg Nursery</title>
+<style>
+  :root {
+    --bg1: #2b1b5a; --bg2: #5b2a86; --card: #fff8e7; --ink: #3a2455;
+    --accent: #ff7a3d; --good: #2fb55a; --bad: #e5484d; --nest: #c98a4b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: "Trebuchet MS", "Comic Sans MS", system-ui, sans-serif;
+    color: var(--ink); background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    display: flex; justify-content: center; padding: 16px;
+  }
+  #app { width: 100%; max-width: 640px; }
+  .card { background: var(--card); border-radius: 24px; padding: 20px; box-shadow: 0 8px 0 rgba(0,0,0,.25); }
+  h1 { margin: 0 0 4px; font-size: 2rem; text-align: center; }
+  h2 { margin: 0 0 8px; text-align: center; }
+  .sub { text-align: center; margin: 0 0 16px; }
+  .big-dragon { font-size: 4.5rem; text-align: center; line-height: 1; }
+  button {
+    font: inherit; font-weight: 700; border: 0; border-radius: 16px; padding: 12px 18px; cursor: pointer;
+    background: var(--accent); color: #fff; box-shadow: 0 4px 0 rgba(0,0,0,.25); touch-action: manipulation;
+  }
+  button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+  button.alt { background: #7a5af8; }
+  button.ghost { background: #e9dcc0; color: var(--ink); }
+  .tables { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+  .tables button { padding: 14px 0; font-size: 1.3rem; }
+  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 700; }
+  .request { display: flex; align-items: center; gap: 12px; font-size: 1.25rem; margin-bottom: 8px; }
+  .request .face { font-size: 3rem; }
+  .bubble { background: #fff; border-radius: 16px; padding: 10px 14px; flex: 1; border: 3px solid #e9dcc0; }
+  .bubble b { color: var(--accent); }
+  .nest {
+    background: radial-gradient(circle at 50% 30%, #dba468, var(--nest)); border-radius: 24px; padding: 14px;
+    display: flex; flex-direction: column; gap: 6px; align-items: center; margin: 10px 0;
+    box-shadow: inset 0 4px 8px rgba(0,0,0,.25);
+  }
+  .nrow { display: flex; align-items: center; gap: 6px; }
+  .slots { display: flex; gap: 4px; padding: 3px; border-radius: 12px; border: 3px dashed rgba(255,255,255,.55); cursor: pointer; }
+  .slots.full { border-color: transparent; cursor: default; }
+  .slot { width: var(--cell); height: var(--cell); display: grid; place-items: center; font-size: calc(var(--cell) * .85); line-height: 1; }
+  .slot.empty { opacity: .25; filter: grayscale(1); }
+  .slot.pop { animation: pop .35s ease-out; }
+  .count { width: 2.6rem; text-align: right; color: #fff; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,.5); font-size: .95rem; }
+  .total { text-align: center; font-size: 1.2rem; min-height: 1.7em; font-weight: 700; }
+  .choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
+  .choices button { font-size: 1.6rem; padding: 14px 0; }
+  .choices button.right { background: var(--good); }
+  .choices button.wrong { background: var(--bad); animation: shake .3s; }
+  .msg { text-align: center; font-size: 1.15rem; min-height: 3em; margin-top: 8px; font-weight: 700; }
+  .hatch { animation: hatch 1s ease-out; }
+  .coll { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .coll div { background: #fff; border-radius: 16px; padding: 10px 4px; text-align: center; border: 3px solid #e9dcc0; }
+  .coll .e { font-size: 2.2rem; }
+  .coll .locked .e { filter: grayscale(1) brightness(.4); }
+  .coll small { display: block; }
+  @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  @keyframes hatch { 0% { transform: scale(.3) rotate(-20deg); } 60% { transform: scale(1.4) rotate(10deg); } 100% { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
 </head>
 <body>
-  <h1>Times Tables Game</h1>
-  <p>Game coming soon!</p>
+<div id="app"></div>
+
+<script>
+// One dragon per times table. Mix rounds use any of them.
+const DRAGONS = {
+  2:  { emoji: "🐣", name: "Peep" },   3:  { emoji: "🦎", name: "Zippy" },
+  4:  { emoji: "🐲", name: "Ember" },  5:  { emoji: "🦕", name: "Longneck" },
+  6:  { emoji: "🐊", name: "Snappy" }, 7:  { emoji: "🦖", name: "Rex" },
+  8:  { emoji: "🐉", name: "Blaze" },  9:  { emoji: "🐍", name: "Slinky" },
+  10: { emoji: "🦄", name: "Sparkle" },
+};
+const ROUND_LENGTH = 5;
+const app = document.getElementById("app");
+
+// ---- saved collection (hatched count per table) ----
+function loadSave() {
+  try { return JSON.parse(localStorage.getItem("dragons") || "{}"); } catch { return {}; }
+}
+function writeSave(s) { try { localStorage.setItem("dragons", JSON.stringify(s)); } catch {} }
+let save = loadSave();
+
+const rand = n => Math.floor(Math.random() * n);
+const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+
+// ---- screens ----
+function showHome() {
+  const buttons = [2,3,4,5,6,7,8,9,10].map(t => `<button data-t="${t}">${t}×</button>`).join("");
+  app.innerHTML = `
+    <div class="card">
+      <div class="big-dragon">🥚🐉</div>
+      <h1>Dragon Egg Nursery</h1>
+      <p class="sub">Build nests of eggs. Hatch baby dragons!</p>
+      <h2>Pick a times table</h2>
+      <div class="tables">${buttons}<button class="alt" data-t="mix">Mix</button></div>
+      <div class="row"><button class="ghost" id="coll">My dragons 🐲</button></div>
+    </div>`;
+  app.querySelectorAll("[data-t]").forEach(b => b.onclick = () => startRound(b.dataset.t));
+  document.getElementById("coll").onclick = showCollection;
+}
+
+function showCollection() {
+  const cells = Object.entries(DRAGONS).map(([t, d]) => {
+    const n = save[t] || 0;
+    return `<div class="${n ? "" : "locked"}"><span class="e">${d.emoji}</span><b>${n ? d.name : "???"}</b><small>${t}× table${n ? ` · ×${n}` : ""}</small></div>`;
+  }).join("");
+  app.innerHTML = `
+    <div class="card"><h1>My Dragons</h1><p class="sub">Hatch eggs from a table to meet its dragon.</p>
+      <div class="coll">${cells}</div>
+      <div class="row"><button id="back">Back</button></div></div>`;
+  document.getElementById("back").onclick = showHome;
+}
+
+// ---- round logic ----
+let round;
+function makeQuestion(mode) {
+  const table = mode === "mix" ? 2 + rand(9) : Number(mode);
+  const other = 1 + rand(10);
+  const swap = Math.random() < .5;
+  return { table, rows: swap ? other : table, cols: swap ? table : other };
+}
+
+function startRound(mode) {
+  round = { mode, i: 0, stars: 0, q: null };
+  nextQuestion();
+}
+
+function nextQuestion() {
+  if (round.i >= ROUND_LENGTH) return showResults();
+  round.q = makeQuestion(round.mode);
+  round.q.filled = 0;
+  round.q.misses = 0;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const { rows, cols, table } = round.q;
+  const d = DRAGONS[table];
+  const cell = Math.max(18, Math.min(40, Math.floor(Math.min(window.innerWidth - 150, 460) / cols) - 6));
+  app.innerHTML = `
+    <div class="card" style="--cell:${cell}px">
+      <div class="topbar"><button class="ghost" id="home">✕</button><span>Egg ${round.i + 1} of ${ROUND_LENGTH}</span><span>⭐ ${round.stars}</span></div>
+      <div class="request"><span class="face">${d.emoji}</span>
+        <div class="bubble">${d.name} wants <b>${rows} ${rows === 1 ? "row" : "rows"}</b> with <b>${cols}</b> ${cols === 1 ? "egg" : "eggs"} in each row!</div></div>
+      <div class="nest" id="nest"></div>
+      <div class="total" id="total">Tap a row to fill it with eggs 👆</div>
+      <div id="answer"></div>
+      <div class="msg" id="msg"></div>
+    </div>`;
+  document.getElementById("home").onclick = showHome;
+  const nest = document.getElementById("nest");
+  for (let r = 0; r < rows; r++) {
+    const row = document.createElement("div");
+    row.className = "nrow";
+    row.innerHTML = `<div class="slots">${`<div class="slot empty">🥚</div>`.repeat(cols)}</div><span class="count"></span>`;
+    row.querySelector(".slots").onclick = () => fillRow(row, r);
+    nest.appendChild(row);
+  }
+}
+
+function fillRow(row, r) {
+  const q = round.q;
+  const slots = row.querySelector(".slots");
+  if (slots.classList.contains("full")) return;
+  slots.classList.add("full");
+  row.querySelectorAll(".slot").forEach((s, i) => {
+    s.classList.remove("empty");
+    s.classList.add("pop");
+    s.style.animationDelay = `${i * 40}ms`;
+  });
+  q.filled++;
+  // skip counting: each filled row shows the running total
+  row.querySelector(".count").textContent = q.filled * q.cols;
+  const total = document.getElementById("total");
+  total.textContent = Array.from({ length: q.filled }, (_, i) => (i + 1) * q.cols).join(", ") + (q.filled < q.rows ? "…" : "");
+  if (q.filled === q.rows) setTimeout(showAnswer, 500);
+}
+
+function showAnswer() {
+  const { rows, cols } = round.q;
+  const answer = rows * cols;
+  const opts = new Set([answer]);
+  const near = [answer + cols, answer - cols, answer + rows, answer - rows, answer + 1, answer - 1, answer + 10, answer - 10];
+  for (const n of shuffle(near)) if (n > 0 && opts.size < 4) opts.add(n);
+  while (opts.size < 4) opts.add(1 + rand(100));
+  document.getElementById("total").textContent = "How many eggs in the nest altogether?";
+  const box = document.getElementById("answer");
+  box.innerHTML = `<div class="choices">${shuffle([...opts]).map(n => `<button data-n="${n}">${n}</button>`).join("")}</div>`;
+  box.querySelectorAll("button").forEach(b => b.onclick = () => choose(b, answer));
+}
+
+function choose(btn, answer) {
+  const q = round.q;
+  if (Number(btn.dataset.n) !== answer) {
+    q.misses++;
+    btn.classList.add("wrong");
+    btn.disabled = true;
+    document.getElementById("msg").textContent = `Not quite! ${q.rows} rows of ${q.cols}: count the numbers on the side and try again 🤔`;
+    return;
+  }
+  document.querySelectorAll(".choices button").forEach(b => b.disabled = true);
+  btn.classList.add("right");
+  if (q.misses === 0) round.stars++;
+  hatch();
+}
+
+function hatch() {
+  const { rows, cols, table } = round.q;
+  const d = DRAGONS[table];
+  save[table] = (save[table] || 0) + 1;
+  writeSave(save);
+  document.getElementById("total").textContent = `${rows} × ${cols} = ${rows * cols}`;
+  document.getElementById("answer").innerHTML = "";
+  document.getElementById("msg").innerHTML = `
+    <span class="hatch" style="display:inline-block;font-size:3rem">${d.emoji}</span><br>
+    The eggs hatched! ${d.name} says thanks!
+    <div class="row">
+      <button class="alt" id="turn">Turn the nest 🔄</button>
+      <button id="next">${round.i + 1 === ROUND_LENGTH ? "Finish" : "Next eggs"} ➜</button>
+    </div>`;
+  document.getElementById("turn").onclick = turnNest;
+  document.getElementById("next").onclick = () => { round.i++; nextQuestion(); };
+}
+
+// Show the same eggs turned sideways: rows x cols becomes cols x rows.
+function turnNest() {
+  const q = round.q;
+  [q.rows, q.cols] = [q.cols, q.rows];
+  renderQuestion();
+  document.querySelectorAll(".slots").forEach(s => {
+    s.classList.add("full");
+    s.querySelectorAll(".slot").forEach(e => e.classList.remove("empty"));
+  });
+  document.querySelectorAll(".count").forEach((c, i) => c.textContent = (i + 1) * q.cols);
+  document.getElementById("total").textContent = `Same eggs, turned! ${q.rows} × ${q.cols} = ${q.rows * q.cols}`;
+  document.getElementById("msg").innerHTML = `<div class="row"><button id="next">Next eggs ➜</button></div>`;
+  document.getElementById("next").onclick = () => { round.i++; nextQuestion(); };
+}
+
+function showResults() {
+  const s = round.stars;
+  const text = s === ROUND_LENGTH ? "Perfect! You're a Dragon Master! 🏆" : s >= 3 ? "Great job, dragon trainer! 🎉" : "Nice try! Every egg helps you learn 💪";
+  app.innerHTML = `
+    <div class="card"><div class="big-dragon">🐉✨</div>
+      <h1>Round complete!</h1>
+      <p class="sub">${"⭐".repeat(s) || "—"}<br>${s} of ${ROUND_LENGTH} right on the first try<br>${text}</p>
+      <div class="row"><button id="again">Play again</button><button class="alt" id="coll">My dragons</button><button class="ghost" id="home">Home</button></div></div>`;
+  document.getElementById("again").onclick = () => startRound(round.mode);
+  document.getElementById("coll").onclick = showCollection;
+  document.getElementById("home").onclick = showHome;
+}
+
+showHome();
+</script>
 </body>
 </html>
